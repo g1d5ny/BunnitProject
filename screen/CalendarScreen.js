@@ -1,38 +1,42 @@
 import React, { useEffect, useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import {
   addDays,
   addMonths,
   format,
   getDate,
   getMonth,
-  getWeeksInMonth, getYear,
+  getWeeksInMonth,
+  getYear,
   startOfMonth,
   startOfWeek,
 } from "date-fns";
-import { screenHeight, screenWidth } from "../style/DimenStyle";
+import { screenWidth } from "../style/DimenStyle";
 import GestureRecognizer from "react-native-swipe-gestures";
+import ArrowLeft from "../asset/icon/icon_arrow_left.svg";
+import ArrowRight from "../asset/icon/icon_arrow_right.svg";
 
 
 const CalendarScreen = () => {
-  const date = new Date(); //오늘날짜를 생성
-  const monthStart = startOfMonth(date);  // 이번달 1일
-  // const curMonth = getMonth(date);//오늘날짜를 기준으로 현재달을 구한다
-  const weekStart = startOfWeek(monthStart, { weekStartOn: 0 }); // 1일을 기준으로 주의 시작 일자 (0부터 시작 : 일요일부터 시작)
+  const date = new Date();
+  const monthStart = startOfMonth(date);
+  const weekStart = startOfWeek(monthStart, { weekStartOn: 0 });
 
-  const [monthDays, setMonthDays] = useState([]);
+  const [curDate, setCurDate] = useState(date);
   const [curMonth, setCurMonth] = useState(getMonth(date));
   const [curYear, setCurYear] = useState(getYear(date));
+  const [monthDays, setMonthDays] = useState([]);
+  const [selectedDay, setSelectedDay] = useState();
 
   useEffect(() => {
-    getMonthDays(date, curMonth)
-  }, [curMonth])
+    getMonthDays(curDate, curMonth);
+  }, []);
 
   useEffect(() => {
+    setCurMonth(getMonth(curDate));
+    setCurYear(getYear(curDate));
+  }, [curDate]);
 
-  }, [monthDays])
-
-  //요일 표시법바꾸기
   const getDay = () => {
     let dayWord = [];
     let tempDate;
@@ -45,20 +49,17 @@ const CalendarScreen = () => {
     return dayWord;
   };
 
-  //한주 구하기
   const getWeekDays = (data, month) => {
-    const weekStart = startOfWeek(data, { weekStartOn: 1 });//기준날짜를 통해 주 시작일 구하기
+    const weekStart = startOfWeek(data, { weekStartOn: 1 });
     const weekLength = 7;
     const weekList = [];
 
     for (let i = 0; i < weekLength; i++) {
       const tempDate = addDays(weekStart, i);
-      // const formatted = getDay(format(tempDate,'EEE'));
 
       if (getMonth(tempDate) === month) {
         weekList.push({
           key: getDate(tempDate),
-          // formatted,
           date: tempDate,
           day: getDate(tempDate),
           month: "cur",
@@ -66,7 +67,6 @@ const CalendarScreen = () => {
       } else if (getMonth(tempDate) < month) {
         weekList.push({
           key: getDate(tempDate),
-          // formatted,
           date: tempDate,
           day: getDate(tempDate),
           month: "pre",
@@ -75,7 +75,6 @@ const CalendarScreen = () => {
       } else if (getMonth(tempDate) > month) {
         weekList.push({
           key: getDate(tempDate),
-          // formatted,
           date: tempDate,
           day: getDate(tempDate),
           month: "next",
@@ -86,126 +85,121 @@ const CalendarScreen = () => {
     return weekList;
   };
 
-
-  //한달구하기
   const getMonthDays = (data, month) => {
-
-    const monthStart = startOfMonth(data); //달 시작일 구하기 --> 1일
-
     const monthList = [];
-    const weekLength = getWeeksInMonth(monthStart); //--> 기준달이 몇주인지 구하기
+    const monthStart = startOfMonth(data);
+
+    const weekLength = getWeeksInMonth(monthStart);
     for (let i = 0; i < weekLength; i++) {
       const count = i * 7;
       const weekStartDate = addDays(monthStart, count);
       monthList.push(getWeekDays(weekStartDate, month));
     }
-
-    console.log("data: ", data, ", month: ", month);
-
-    setMonthDays(monthList)//오늘날짜와 현재달을 갖고 한달의 날짜를 구한다)
+    setCurDate(data);
+    setMonthDays(monthList);
     return monthList;
   };
 
-
-  //다음달구하기
   const getNextMonth = () => {
-    console.log("getNextMonth");
-    setCurMonth(curMonth+1);
-    const nextDate = addMonths(curMonth, 1);
+    const nextDate = addMonths(curDate, 1);
     const month = getMonth(nextDate);
     return getMonthDays(nextDate, month);
   };
 
-  //이전달 구하기
   const getPreMonth = () => {
-    console.log("getPreMonth : ", monthStart);
-    setCurMonth(curMonth-1);
-    const preDate = addMonths(curMonth, -1);
+    const preDate = addMonths(curDate, -1);
     const month = getMonth(preDate);
     return getMonthDays(preDate, month);
   };
 
   return (
     <View style={{ flex: 1, backgroundColor: "#fff" }}>
-      <View style={{flexDirection: 'row', alignItems: 'center'}}>
-        <Text>{curYear} {curMonth+1}</Text>
+      <View style={{ margin: 20, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+        <TouchableOpacity onPress={getPreMonth}>
+          <ArrowLeft />
+        </TouchableOpacity>
+        <Text style={{
+          fontSize: 15,
+          fontWeight: "bold",
+          marginLeft: 10,
+          marginRight: 10,
+        }}>{curYear}년 {curMonth + 1}월</Text>
+        <TouchableOpacity onPress={getNextMonth}>
+          <ArrowRight />
+        </TouchableOpacity>
       </View>
-      <Text style={{ width: screenWidth, height: 30 }}>{
-        getDay().map((item, index) => {
-          return (
-            <View style={[style.dayView]} key={index.toString()}>
-              <Text style={{
-                fontSize: 10,
-                color: item === "Sun" ? "red" : (item === "Sat" ? "blue" : "#b1b1b1"),
-              }}>{item}</Text>
-            </View>
-          );
-        })
-      }</Text>
-      <GestureRecognizer style={{flex: 1, flexDirection: 'row', flexWrap: 'wrap'}}
-                         onSwipeUp={() => getNextMonth()}
-                         onSwipeDown={() => getPreMonth()}>
+      <Text>
+        {
+          getDay().map((item, index) => {
+            return (
+              <View style={[style.weekView]} key={index.toString()}>
+                <Text style={{
+                  fontSize: 10,
+                  color: item === "Sun" ? "red" : (item === "Sat" ? "blue" : "#b1b1b1"),
+                }}>{item}</Text>
+              </View>
+            );
+          })
+        }
+      </Text>
+      <GestureRecognizer style={{ flexDirection: "row", flexWrap: "wrap" }}
+                         onSwipeUp={getNextMonth}
+                         onSwipeDown={getPreMonth}>
         {monthDays ? monthDays.map((el) => {
           return (
-            el.map(({ month, day }, index) => {
+            el.map(({ month, day, date }, index) => {
               return (
-                <View
-                  style={[style.dayView]}
-                  key={index.toString()}>
+                <TouchableOpacity
+                  key={index.toString()}
+                  onPress={() => setSelectedDay(date)}
+                  style={[style.dayView, selectedDay === date ? style.today : null]}>
                   <Text
-                    style={[style.dayText, month !== "cur" ? style.dayText2 : null]}>{day}</Text>
-                </View>
+                    style={[style.dayText, month !== "cur" ? style.dayText2 : selectedDay === date ? style.dayText3 : null]}>{day}</Text>
+                </TouchableOpacity>
               );
             })
           );
         }) : null}
       </GestureRecognizer>
+      <View style={{flex: 1, borderWidth:1, borderColor: "#b1b1b1"}}>
+
+      </View>
     </View>
   );
 };
 
 const style = StyleSheet.create({
-  calendarView: {
-    // flex: 1,
-    width: "100%",
-  },
-  calendar: {
-    flex: 1,
-    flexDirection: "row",
-    width: "100%",
-    flexWrap: "wrap",
-    justifyContent: "flex-start",
+  weekView: {
+    width: screenWidth * 0.14,
+    height: 30,
     alignItems: "center",
-    paddingHorizontal: 10,
+    justifyContent: "center",
   },
   dayView: {
     width: screenWidth * 0.14,
-    height: screenHeight * 0.14,
+    height: 60,
     alignItems: "center",
+    justifyContent: "center",
   },
   dayText: {
-    fontSize: 10,
+    fontSize: 18,
     color: "#222222",
   },
   dayText2: {
-    fontSize: 10,
+    fontSize: 18,
     color: "#b1b1b1",
   },
   dayText3: {
-    fontSize: 10,
-    color: "red",
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: "#222"
   },
   today: {
-    color: "purple",
-    fontWeight: "bold",
-  },
-  dayLine: {
-    width: "100%",
-    alignContent: "flex-start",
-    marginBottom: 4,
-  },
-  dayLineText: {
-    fontSize: 10,
+    width: screenWidth * 0.14,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 2,
+    borderColor: "#2CDDE9",
   },
 });
 export default CalendarScreen;
