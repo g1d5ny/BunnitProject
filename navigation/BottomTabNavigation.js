@@ -19,6 +19,7 @@ const Tab = createBottomTabNavigator();
 const BottomTabNavigation = () => {
   return (
     <Tab.Navigator
+      initialRouteName='CalendarScreen'
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: '#111111',
